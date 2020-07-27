@@ -1,20 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
 using System.IO;
 using System.Net;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace theServerProject
 {
     class Program
     {
-        static readonly string superDir = @"C:\Users\a1332\Desktop\theServerProject\src";
-        static readonly string superUrl = "http://192.168.1.240:5000/";
+        static readonly string superDir = @"C:\Users\a1332\Desktop\theServerProject\src\jameszu.github.io";
+        static readonly string superUrl = "http://172.24.119.44:5000/";
         static void Main(string[] args)
         {
             Console.WriteLine("Starting server...");
