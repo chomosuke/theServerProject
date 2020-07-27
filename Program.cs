@@ -79,7 +79,13 @@ namespace theServerProject
 
             string responseFilePath = (string)state[1];
             byte[] _responseArray = File.ReadAllBytes(responseFilePath); // get the bytes to response
-            context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
+            try
+            {
+                context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
+            } catch (System.Net.HttpListenerException e)
+            {
+                Console.WriteLine("connection aborted");
+            }
             context.Response.KeepAlive = false; // set the KeepAlive bool to false
             Console.WriteLine("Request Responded: " + context.Request.Url);
             context.Response.Close(); // close the connection
