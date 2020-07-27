@@ -7,37 +7,66 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace theServerProject
 {
     class Program
     {
+        static readonly string superDir = @"C:\Users\a1332\Desktop\theServerProject\src";
+        static readonly string superUrl = "http://192.168.1.240:5000/";
         static void Main(string[] args)
         {
             Console.WriteLine("Starting server...");
-            createPage("", "<html><head><title>Richard server -- port 5000</title></head>" +
-                    "<body>Welcome to the <strong>Richard server</strong> -- <em>port 5000!</em>" +
-                    "<p>remember i told you i'm building my own server?</p>" +
-                    "<a href=\"http://118.92.5.160:5000/richardtube/\">Visit this unfinished RichardTube with nothing in it</a>" +
-                    "<img src=\"image.jpg\"/>" +
-                    "</body></html>");
-            createPage("richardtube/", "<html><head><title>RTube</title></head>" +
-                    "<body><strong>RichardTube</strong>" +
-                    "<p>some videos will be here</p></body></html>");
+            List<String> dirs = DirSearch(superDir);
+            foreach (string d in dirs)
+            {
+                Console.WriteLine((d.Substring(superDir.Length + 1)
+                    .Replace("\\", "/")
+                    .Replace(".html", "") + "/")
+                    .Replace("index/", ""));
+                createPage(
+                    (d.Substring(superDir.Length + 1)
+                    .Replace("\\", "/")
+                    .Replace(".html", "") + "/")
+                    .Replace("index/", ""), d);
+            }
             Console.WriteLine("Server started.");
             Console.ReadLine();
         }
-        static void createPage(string subdir, string response)
+
+        private static List<String> DirSearch(string sDir)
+        {
+            List<String> files = new List<String>();
+            try
+            {
+                foreach (string f in Directory.GetFiles(sDir))
+                {
+                    files.Add(f);
+                }
+                foreach (string d in Directory.GetDirectories(sDir))
+                {
+                    files.AddRange(DirSearch(d));
+                }
+            }
+            catch (System.Exception excpt)
+            {
+                MessageBox.Show(excpt.Message);
+            }
+
+            return files;
+        }
+
+        static void createPage(string subdir, string responseFilePath)
         {
             HttpListener listener = new HttpListener();
-            listener.Prefixes.Add("http://192.168.1.240:5000/" + subdir); // add prefix "http://192.168.1.240:5000/" and subdir
+            listener.Prefixes.Add(superUrl + subdir); // add prefix "http://192.168.1.240:5000/" and subdir
             listener.Start(); // start server (Run application as Administrator!)
             object[] state = new object[2];
             state[0] = listener;
-            state[1] = response;
+            state[1] = responseFilePath;
             listener.BeginGetContext(new AsyncCallback(OnContext), state);
         }
-
         private static void OnContext(IAsyncResult result)
         {
             object[] state = (object[])result.AsyncState;
@@ -47,30 +76,13 @@ namespace theServerProject
 
             // start getting the next one immediately
             listener.BeginGetContext(OnContext, state);
-            if (context.Request.Url.Equals(new Uri("http://118.92.5.160:5000/image.jpg")))
-            {
-                byte[] _responseArray;
-                Image img = Image.FromFile(@"C:/Users/a1332/Pictures/Screenshots/Screenshot (4).png");
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    img.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-                    _responseArray = ms.ToArray();
-                }
-                context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
-                context.Response.KeepAlive = false; // set the KeepAlive bool to false
-            }
-            else
-            {
-                string response = (string)state[1];
-                byte[] _responseArray = Encoding.UTF8.GetBytes(response); // get the bytes to response
-                context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
-                context.Response.KeepAlive = false; // set the KeepAlive bool to false
-            }
+
+            string responseFilePath = (string)state[1];
+            byte[] _responseArray = File.ReadAllBytes(responseFilePath); // get the bytes to response
+            context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
+            context.Response.KeepAlive = false; // set the KeepAlive bool to false
             Console.WriteLine("Request Responded: " + context.Request.Url);
             context.Response.Close(); // close the connection
-
         }
-
-
     }
 }

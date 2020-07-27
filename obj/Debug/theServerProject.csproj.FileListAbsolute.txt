@@ -5,3 +5,10 @@ C:\Users\a1332\source\repos\theServerProject\bin\Debug\theServerProject.exe
 C:\Users\a1332\source\repos\theServerProject\bin\Debug\theServerProject.pdb
 C:\Users\a1332\source\repos\theServerProject\obj\Debug\theServerProject.exe
 C:\Users\a1332\source\repos\theServerProject\obj\Debug\theServerProject.pdb
+C:\Users\a1332\Desktop\theServerProject\bin\Debug\theServerProject.exe.config
+C:\Users\a1332\Desktop\theServerProject\bin\Debug\theServerProject.exe
+C:\Users\a1332\Desktop\theServerProject\bin\Debug\theServerProject.pdb
+C:\Users\a1332\Desktop\theServerProject\obj\Debug\theServerProject.csprojAssemblyReference.cache
+C:\Users\a1332\Desktop\theServerProject\obj\Debug\theServerProject.csproj.CoreCompileInputs.cache
+C:\Users\a1332\Desktop\theServerProject\obj\Debug\theServerProject.exe
+C:\Users\a1332\Desktop\theServerProject\obj\Debug\theServerProject.pdb
