@@ -2,37 +2,48 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Windows.Forms;
 
 namespace theServerProject
 {
     class Program
     {
-        static readonly string superDir = @"C:\Users\a1332\Desktop\theServerProject\src\jameszu.github.io";
-        static readonly string superUrl = "http://172.24.119.44:5000/";
+        static readonly string superDir = @"C:\Users\a1332\Desktop\theServerProject\src";
+        static readonly string superUrl = "http://" + GetLocalIPAddress() + ":5000/";
         static void Main(string[] args)
         {
-            Console.WriteLine("Starting server...");
+            Console.WriteLine("Starting server...\nhome URL: " + superUrl);
             List<String> dirs = DirSearch(superDir);
             foreach (string d in dirs)
             {
-                Console.WriteLine((d.Substring(superDir.Length + 1)
-                    .Replace("\\", "/")
-                    .Replace(".html", "") + "/")
-                    .Replace("index/", ""));
-                createPage(
-                    (d.Substring(superDir.Length + 1)
-                    .Replace("\\", "/")
-                    .Replace(".html", "") + "/")
-                    .Replace("index/", ""), d);
+                var url = (d.Substring(superDir.Length + 1)
+                       .Replace("\\", "/")
+                       .Replace(".html", "") + "/")
+                       .Replace("index/", "");
+                Console.WriteLine(url);
+                createPage(url, d);
             }
             Console.WriteLine("Server started.");
             Console.ReadLine();
         }
 
-        private static List<String> DirSearch(string sDir)
+        public static string GetLocalIPAddress()
         {
-            List<String> files = new List<String>();
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
+
+        private static List<string> DirSearch(string sDir)
+        {
+            List<string> files = new List<string>();
             try
             {
                 foreach (string f in Directory.GetFiles(sDir))
@@ -44,7 +55,7 @@ namespace theServerProject
                     files.AddRange(DirSearch(d));
                 }
             }
-            catch (System.Exception excpt)
+            catch (Exception excpt)
             {
                 MessageBox.Show(excpt.Message);
             }
@@ -77,13 +88,13 @@ namespace theServerProject
             try
             {
                 context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
-            } catch (System.Net.HttpListenerException e)
+                context.Response.KeepAlive = false; // set the KeepAlive bool to false
+                context.Response.Close(); // close the connection
+            } catch (HttpListenerException)
             {
                 Console.WriteLine("connection aborted");
             }
-            context.Response.KeepAlive = false; // set the KeepAlive bool to false
-            Console.WriteLine("Request Responded: " + context.Request.Url);
-            context.Response.Close(); // close the connection
+            Console.WriteLine("Request Responded: " + context.Request.Url + " " + "at: " + DateTime.Now);
         }
     }
 }
