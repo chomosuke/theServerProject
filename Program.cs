@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Windows.Forms;
 
@@ -14,16 +15,10 @@ namespace theServerProject
         static void Main(string[] args)
         {
             Console.WriteLine("Starting server...\nhome URL: " + superUrl);
-            List<String> dirs = DirSearch(superDir);
-            foreach (string d in dirs)
-            {
-                var url = (d.Substring(superDir.Length + 1)
-                       .Replace("\\", "/")
-                       .Replace(".html", "") + "/")
-                       .Replace("index/", "");
-                Console.WriteLine(url);
-                createPage(url, d);
-            }
+            HttpListener listener = new HttpListener();
+            listener.Prefixes.Add(superUrl); // add prefix "http://192.168.1.240:5000/" and subdir
+            listener.Start(); // start server (Run application as Administrator!)
+            listener.BeginGetContext(new AsyncCallback(OnContext), listener);
             Console.WriteLine("Server started.");
             Console.ReadLine();
         }
@@ -41,60 +36,63 @@ namespace theServerProject
             throw new Exception("No network adapters with an IPv4 address in the system!");
         }
 
-        private static List<string> DirSearch(string sDir)
-        {
-            List<string> files = new List<string>();
-            try
-            {
-                foreach (string f in Directory.GetFiles(sDir))
-                {
-                    files.Add(f);
-                }
-                foreach (string d in Directory.GetDirectories(sDir))
-                {
-                    files.AddRange(DirSearch(d));
-                }
-            }
-            catch (Exception excpt)
-            {
-                MessageBox.Show(excpt.Message);
-            }
-
-            return files;
-        }
-
-        static void createPage(string subdir, string responseFilePath)
-        {
-            HttpListener listener = new HttpListener();
-            listener.Prefixes.Add(superUrl + subdir); // add prefix "http://192.168.1.240:5000/" and subdir
-            listener.Start(); // start server (Run application as Administrator!)
-            object[] state = new object[2];
-            state[0] = listener;
-            state[1] = responseFilePath;
-            listener.BeginGetContext(new AsyncCallback(OnContext), state);
-        }
         private static void OnContext(IAsyncResult result)
         {
-            object[] state = (object[])result.AsyncState;
-            HttpListener listener = (HttpListener)state[0];
+            HttpListener listener = (HttpListener)result.AsyncState;
             HttpListenerContext context = listener.EndGetContext(result); // get a context
             // Now, you'll find the request URL in context.Request.Url
 
             // start getting the next one immediately
-            listener.BeginGetContext(OnContext, state);
+            listener.BeginGetContext(OnContext, result.AsyncState);
 
-            string responseFilePath = (string)state[1];
-            byte[] _responseArray = File.ReadAllBytes(responseFilePath); // get the bytes to response
-            try
+            string url = context.Request.Url.ToString();
+            byte[] _responseArray = null; // the bytes to response
+            string subUrl = url.Substring(url.IndexOf(":5000") + 5);
+            switch (subUrl)
             {
+                case "/":
+                    _responseArray = AttemptReadAllBytes(superDir + "\\index.html");
+                    break;
+
+
+                default:
+                    string path = superDir + subUrl;
+                    path = path.Replace('/', '\\');
+                    while (path.EndsWith("\\")) // ignore all \ at the end
+                        path = path.Substring(0, path.Length - 1);
+
+                    _responseArray = AttemptReadAllBytes(path);
+                    if (_responseArray != null)
+                        break;
+
+                    path += ".html";
+                    _responseArray = AttemptReadAllBytes(path);
+                    if (_responseArray != null)
+                        break;
+
+                    context.Response.StatusCode = 404; // 404 not found
+                    _responseArray = AttemptReadAllBytes(superDir + "\\404NotFound.html");
+                    break;
+            }
+            try {
                 context.Response.OutputStream.Write(_responseArray, 0, _responseArray.Length); // write bytes to the output stream
                 context.Response.KeepAlive = false; // set the KeepAlive bool to false
-                context.Response.Close(); // close the connection
-            } catch (HttpListenerException)
-            {
+            } catch (HttpListenerException) {
                 Console.WriteLine("connection aborted");
+            } finally {
+                context.Response.Close(); // close the connection
             }
             Console.WriteLine("Request Responded: " + context.Request.Url + " " + "at: " + DateTime.Now);
+        }
+
+        private static byte[] AttemptReadAllBytes(string path)
+        {
+            try {
+                return File.ReadAllBytes(path);
+            } catch (Exception e) {
+                // Console.WriteLine(e);
+                return null;
+            }
         }
     }
 }
