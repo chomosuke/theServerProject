@@ -4,6 +4,8 @@ using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Forms;
 
 namespace theServerProject
@@ -36,6 +38,10 @@ namespace theServerProject
             throw new Exception("No network adapters with an IPv4 address in the system!");
         }
 
+        //Generate a public/private key pair.  
+        static RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+        //Save the public key information to an RSAParameters structure.  
+        static RSAParameters rsaKeyInfo = rsa.ExportParameters(false);
         private static void OnContext(IAsyncResult result)
         {
             HttpListener listener = (HttpListener)result.AsyncState;
@@ -54,6 +60,13 @@ namespace theServerProject
                     _responseArray = AttemptReadAllBytes(superDir + "\\index.html");
                     break;
 
+                case "/chatbox/gib public key":
+                    _responseArray = rsaKeyInfo.Modulus;
+                    break;
+
+                case "/chatbox/login request":
+                    
+                    break;
 
                 default:
                     string path = superDir + subUrl;
